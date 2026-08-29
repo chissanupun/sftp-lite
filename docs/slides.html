@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>SFTP-Lite — Project 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #0a1626;
+    --paper-2: #10203a;
+    --line: #4a80ac;
+    --line-dim: #29496b;
+    --grid: rgba(74, 128, 172, .14);
+    --ink: #f4f8fc;
+    --ink-dim: #93aec6;
+    --amber: #f0b04a;
+    --bad: #e8896f;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--paper); color: var(--ink);
+    font-family: "IBM Plex Sans Thai", "IBM Plex Sans", system-ui, sans-serif;
+    overflow: hidden;
+  }
+  .deck {
+    height: 100vh; width: 100vw; position: relative;
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 32px 32px;
+    background-position: -1px -1px;
+  }
+  .deck::before {
+    content: ""; position: absolute; inset: 14px;
+    border: 1px solid var(--line);
+    pointer-events: none;
+  }
+  .tick { position: absolute; width: 10px; height: 10px; border-color: var(--amber); pointer-events: none; }
+  .tick.tl { top: 14px; left: 14px; border-top: 2px solid; border-left: 2px solid; }
+  .tick.tr { top: 14px; right: 14px; border-top: 2px solid; border-right: 2px solid; }
+  .tick.bl { bottom: 14px; left: 14px; border-bottom: 2px solid; border-left: 2px solid; }
+  .tick.br { bottom: 14px; right: 14px; border-bottom: 2px solid; border-right: 2px solid; }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8vh 10vw;
+    opacity: 0;
+    transition: opacity .2s ease;
+  }
+  .slide.active { display: flex; opacity: 1; }
+  .slide > *:not(.sheet-row) { position: relative; z-index: 1; }
+  .slide::before {
+    content: "";
+    position: absolute; left: 0; top: 15%; bottom: 12%;
+    width: min(80vw, 1100px);
+    background: var(--paper);
+    box-shadow: 0 0 40px 40px var(--paper);
+  }
+
+  .sheet-row {
+    display: flex; align-items: baseline; gap: 1rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .82rem; color: var(--amber); letter-spacing: .04em;
+    margin-bottom: 1.6rem;
+  }
+  .sheet-row .rule { flex: 1; height: 1px; background: var(--line-dim); }
+
+  h1 {
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 600;
+    font-size: clamp(1.7rem, 3.6vw, 2.8rem);
+    margin: 0 0 1.6rem 0; line-height: 1.2;
+    text-wrap: balance;
+    border-left: 3px solid var(--amber);
+    padding-left: .8rem;
+  }
+
+  ul.points { list-style: none; margin: 0; padding: 0; max-width: 62ch; }
+  ul.points li {
+    font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+    line-height: 1.6; padding: .4rem 0 .4rem 1.1rem; position: relative;
+  }
+  ul.points li::before {
+    content: ""; position: absolute; left: 0; top: .95rem;
+    width: .5rem; height: 2px; background: var(--amber);
+  }
+  ul.points li b { color: var(--amber); font-weight: 600; }
+  ul.points li code {
+    font-family: "IBM Plex Mono", monospace; font-size: .92em;
+    color: var(--ink); background: var(--paper-2);
+    padding: .1em .4em; border: 1px solid var(--line-dim);
+  }
+
+  table {
+    border-collapse: collapse; margin-top: 1.4rem; width: 100%; max-width: 900px;
+    font-size: clamp(.92rem, 1.25vw, 1.1rem);
+  }
+  th, td {
+    border: 1px solid var(--line-dim); padding: .65rem 1rem; text-align: left;
+  }
+  th {
+    background: var(--paper-2); color: var(--amber);
+    font-family: "IBM Plex Mono", monospace; font-weight: 600;
+    font-size: .82rem; text-transform: uppercase; letter-spacing: .04em;
+  }
+  td.forced { color: var(--amber); font-weight: 600; font-family: "IBM Plex Mono", monospace; font-size: .95em; }
+
+  .verdict {
+    margin-top: 1.4rem; font-size: clamp(1.05rem, 1.6vw, 1.35rem);
+    font-family: "IBM Plex Mono", monospace; font-weight: 600; color: var(--amber);
+    padding: .7rem 1rem; border: 1px dashed var(--line);
+    display: inline-block;
+  }
+
+  pre {
+    background: var(--paper-2); border: 1px solid var(--line-dim);
+    padding: 1.3rem 1.5rem; overflow-x: auto;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: clamp(.8rem, 1.05vw, .98rem); line-height: 1.65;
+    max-width: 900px; margin-top: 1rem;
+  }
+  pre .s { color: var(--amber); }
+  pre .c { color: #7fa8cf; }
+  pre .bad { color: var(--bad); }
+
+  ol.demo { max-width: 66ch; padding-left: 0; list-style: none; counter-reset: step; }
+  ol.demo li {
+    font-size: clamp(1.02rem, 1.5vw, 1.28rem); line-height: 1.6; padding: .4rem 0 .4rem 2.6rem;
+    position: relative; counter-increment: step;
+  }
+  ol.demo li::before {
+    content: counter(step, decimal-leading-zero);
+    position: absolute; left: 0; top: .4rem;
+    font-family: "IBM Plex Mono", monospace; color: var(--amber);
+    font-size: .85rem; border: 1px solid var(--line); padding: .1rem .35rem;
+  }
+
+  .foot {
+    position: absolute; bottom: 3vh; left: 10vw; right: 10vw;
+    display: flex; justify-content: space-between; align-items: baseline;
+    color: var(--ink-dim); font-size: .78rem; font-family: "IBM Plex Mono", monospace;
+    letter-spacing: .03em;
+  }
+  .progress {
+    position: absolute; top: 14px; left: 14px; height: 2px; background: var(--amber);
+    transition: width .2s ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .slide, .progress { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+  <div class="tick tl"></div><div class="tick tr"></div><div class="tick bl"></div><div class="tick br"></div>
+  <div class="progress" id="progress"></div>
+
+  <div class="slide active">
+    <div class="sheet-row"><span>SHEET 01/07</span><span class="rule"></span><span>PROBLEM</span></div>
+    <h1>ทำไมต้องมี SFTP-Lite</h1>
+    <ul class="points">
+      <li>ส่งไฟล์ให้ตัวเองผ่าน LINE/Messenger → <b>โดนบีบอัดคุณภาพ</b> (รูป/วิดีโอ) อัตโนมัติ</li>
+      <li>ต้องพึ่งอินเทอร์เน็ต แม้ทั้งสองเครื่องอยู่ห้องเดียวกัน</li>
+      <li><b>SFTP-Lite</b>: ส่งไฟล์ raw bytes ตรงระหว่างเครื่องในวง LAN/WiFi เดียวกัน — ไม่บีบอัด ไม่ต้องเน็ต</li>
+    </ul>
+  </div>
+
+  <div class="slide">
+    <div class="sheet-row"><span>SHEET 02/07</span><span class="rule"></span><span>SCOPE</span></div>
+    <h1>สองระบบในโปรแกรมเดียว</h1>
+    <ul class="points">
+      <li><b>ระบบหลัก — File Transfer</b>: <code>STORE</code> · <code>GET</code> · <code>LIST</code> · <code>DELETE</code></li>
+      <li><b>ระบบรอง — Discovery Beacon</b>: client หา server เจอเองในวง LAN โดยไม่ต้องรู้ IP ล่วงหน้า</li>
+      <li>CLI จริง: <code>sftplite store/get/list/delete/discover</code></li>
+    </ul>
+  </div>
+
+  <div class="slide">
+    <div class="sheet-row"><span>SHEET 03/07</span><span class="rule"></span><span>TRANSPORT — MAIN SYSTEM</span></div>
+    <h1>File Transfer → เลือกยังไง</h1>
+    <table>
+      <tr><th>มิติ</th><th>ความต้องการ</th><th>บังคับ?</th></tr>
+      <tr><td><b>Data integrity</b></td><td>ไฟล์ต้องไม่หาย/ไม่เพี้ยน</td><td class="forced">บังคับ → TCP</td></tr>
+      <tr><td>Timing</td><td>ไม่ time-sensitive</td><td>ไม่บังคับ</td></tr>
+      <tr><td>Throughput</td><td>Elastic</td><td>ไม่บังคับ</td></tr>
+      <tr><td>Security</td><td>ไม่มี (ตัดสินใจไว้ตั้งใจ)</td><td>ไม่บังคับ</td></tr>
+    </table>
+    <p class="verdict">มีแค่ integrity บังคับ → TCP</p>
+  </div>
+
+  <div class="slide">
+    <div class="sheet-row"><span>SHEET 04/07</span><span class="rule"></span><span>TRANSPORT — SECONDARY SYSTEM</span></div>
+    <h1>Discovery → เลือกยังไง</h1>
+    <table>
+      <tr><th>มิติ</th><th>ความต้องการ</th><th>บังคับ?</th></tr>
+      <tr><td>Data integrity</td><td>ทนการสูญหายได้ (ส่งซ้ำทุก 2s)</td><td>ไม่บังคับ</td></tr>
+      <tr><td><b>โครงสร้างการสื่อสาร</b></td><td>ต้อง broadcast แบบ one-to-many</td><td class="forced">บังคับ → UDP</td></tr>
+    </table>
+    <p class="verdict">สองระบบ สองเหตุผล ไม่ใช่การเลือกไม่ถูก</p>
+  </div>
+
+  <div class="slide">
+    <div class="sheet-row"><span>SHEET 05/07</span><span class="rule"></span><span>PROTOCOL SESSION</span></div>
+    <h1>Handshake → Transfer → Closure</h1>
+    <pre><span class="s">S:</span> 220 SFTP-Lite ready
+
+<span class="c">C:</span> STORE &lt;filename&gt; &lt;size&gt;
+<span class="s">S:</span> 100 Continue | <span class="bad">400 Bad Request</span>
+<span class="c">C:</span> &lt;raw bytes&gt;
+<span class="s">S:</span> 201 Stored | <span class="bad">500 Server Error</span>
+
+<span class="c">C:</span> GET &lt;filename&gt;       → <span class="s">S:</span> 200 OK &lt;size&gt; + bytes | <span class="bad">404 Not Found</span>
+<span class="c">C:</span> LIST                 → <span class="s">S:</span> 200 OK &lt;count&gt; + names
+<span class="c">C:</span> DELETE &lt;filename&gt;    → <span class="s">S:</span> 200 OK Deleted | <span class="bad">404 Not Found</span>
+<span class="c">C:</span> QUIT                 → <span class="s">S:</span> 221 Closing</pre>
+  </div>
+
+  <div class="slide">
+    <div class="sheet-row"><span>SHEET 06/07</span><span class="rule"></span><span>DESIGN DECISION</span></div>
+    <h1>ทำไมต้องมี <span style="color:var(--amber)">100 Continue</span></h1>
+    <ul class="points">
+      <li>Naive design: client ส่ง header แล้วยิง payload ตามทันที</li>
+      <li>ถ้า server ปฏิเสธ (<b>400</b>) <b>หลัง</b> bytes ถูกส่งไปแล้ว → bytes ค้างใน TCP stream ถูกตีความผิดเป็นคำสั่งถัดไป → <b>session desync</b></li>
+      <li>วิธีแก้: client รอ <b>100 Continue</b> ก่อนส่ง payload ทุกครั้ง</li>
+      <li>เป็น protocol-level fix ไม่ใช่ patch ทีหลัง</li>
+    </ul>
+  </div>
+
+  <div class="slide">
+    <div class="sheet-row"><span>SHEET 07/07</span><span class="rule"></span><span>DEMO</span></div>
+    <h1>Live demo</h1>
+    <ol class="demo">
+      <li>Happy path: store → list → get → delete</li>
+      <li><b>404</b> — get ไฟล์ที่ไม่มีอยู่</li>
+      <li><b>400</b> — พิมพ์เองผ่าน raw TCP (<code>nc</code>) พิสูจน์ว่า protocol เป็น line-based text จริง</li>
+      <li>Partial-transfer discard — ตัด STORE ไฟล์ใหญ่กลางทาง ไม่มีไฟล์เสียค้าง</li>
+      <li>Discovery beacon</li>
+    </ol>
+  </div>
+
+  <div class="foot">
+    <span>SFTP-LITE / CS351 PROJECT 1</span>
+    <span>← → SPACE TO NAVIGATE</span>
+  </div>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const progress = document.getElementById('progress');
+  let i = 0;
+  function show(n) {
+    slides[i].classList.remove('active');
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides[i].classList.add('active');
+    progress.style.width = ((i + 1) / slides.length * (100 - 2) ) + '%';
+  }
+  document.addEventListener('keydown', e => {
+    if (['ArrowRight', ' ', 'PageDown'].includes(e.key)) { show(i + 1); e.preventDefault(); }
+    if (['ArrowLeft', 'PageUp'].includes(e.key)) { show(i - 1); e.preventDefault(); }
+  });
+  document.addEventListener('click', () => show(i + 1));
+  show(0);
+</script>
+</body>
+</html>
