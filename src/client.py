@@ -100,7 +100,9 @@ def cmd_get(host, port, filename, out_path):
             print(f"error: malformed response: {reply}")
             quit_session(conn)
             return 1
-        dest = out_path or filename
+        dest = os.path.expanduser(out_path) if out_path else filename
+        if os.path.isdir(dest):
+            dest = os.path.join(dest, os.path.basename(filename))
         received = 0
         last_pct = -1
         with open(dest, "wb") as f:
