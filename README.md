@@ -4,8 +4,8 @@ LAN file-transfer tool (STORE/GET/LIST/DELETE over TCP + UDP discovery beacon).
 Project 1, CS351 Computer Communications.
 
 - [Design doc (PDF)](docs/design.pdf)
-- [Slides (Canva)](https://canva.link/gq620m4se5ox1t9)
-- [Video demo](docs/socket_programming.mp4)
+- [Slides](docs/slides.pptx)
+- [Video demo (Canva)](https://canva.link/gq620m4se5ox1t9)
 
 ## Run
 
